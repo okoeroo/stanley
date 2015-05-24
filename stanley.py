@@ -38,16 +38,14 @@ class Process(object):
 
     def process(self, parent):
         buf = self.storage.retrieve(index='sentence', type='input', id='1')
-        if buf.lower() in {"who", "where", "when", "why", "what", "which", "how"}:
+        if buf.lower().split()[0] in {"who", "where", "when", "why", "what", "which", "how"}:
             self.storage.store('question', index='sentence', type='sentence_type', id='1')
 
         # command, begin (first word here) with a nounce
         elif buf.lower().split()[0] in {"give", "show", "do", "fix", "stop", "start", ""}:
             self.storage.store('command', index='sentence', type='sentence_type', id='1')
 
-        print pluralize('child')
-
-        s = "I eat pizza with a fork."
+        s = buf
         s = parse(s,
                 tokenize = True,  # Tokenize the input, i.e. split punctuation from words.
                 tags = True,  # Find part-of-speech tags.
@@ -56,7 +54,10 @@ class Process(object):
                 lemmata = True,  # Find word lemmata.
                 light = False)
 
-        print s
+#        print s
+        for sentence in s.split():
+            for w in sentence:
+                print w
 
         return
 
@@ -74,6 +75,12 @@ class Output(object):
     def process(self, parent):
         buf = self.storage.retrieve(index='sentence', type='input', id='1')
         print buf
+
+        try:
+            buf = self.storage.retrieve(index='sentence', type='sentence_type', id='1')
+            print buf
+        except:
+            pass
         return
 
 
