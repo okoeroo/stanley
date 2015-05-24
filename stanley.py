@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+MODULE = '/Users/okoeroo/dvl/scripts/python/stanley/pattern-2.6'
+import sys
+if MODULE not in sys.path: sys.path.append(MODULE)
+from pattern.en import parse, parsetree, pluralize, singularize
 
 # statement
 # question
@@ -7,7 +11,7 @@
 # command
 
 
-class Input(object):
+class InputSentence(object):
     def __init__(self):
         return
 
@@ -18,7 +22,8 @@ class Input(object):
         self.storage = storage
 
     def process(self, parent):
-        parent.io_in_buffer = raw_input('||>>|| # ')
+        buf = raw_input('||>>|| # ')
+        self.storage.store(buf, index='sentence', type='input', id='1')
         return
 
 class Process(object):
@@ -32,7 +37,27 @@ class Process(object):
         self.storage = storage
 
     def process(self, parent):
-        parent.io_out_buffer = parent.io_in_buffer
+        buf = self.storage.retrieve(index='sentence', type='input', id='1')
+        if buf.lower() in {"who", "where", "when", "why", "what", "which", "how"}:
+            self.storage.store('question', index='sentence', type='sentence_type', id='1')
+
+        # command, begin (first word here) with a nounce
+        elif buf.lower().split()[0] in {"give", "show", "do", "fix", "stop", "start", ""}:
+            self.storage.store('command', index='sentence', type='sentence_type', id='1')
+
+        print pluralize('child')
+
+        s = "I eat pizza with a fork."
+        s = parse(s,
+                tokenize = True,  # Tokenize the input, i.e. split punctuation from words.
+                tags = True,  # Find part-of-speech tags.
+                chunks = True,  # Find chunk tags, e.g. "the black cat" = NP = noun phrase.
+                relations = True,  # Find relations between chunks.
+                lemmata = True,  # Find word lemmata.
+                light = False)
+
+        print s
+
         return
 
 
@@ -47,20 +72,43 @@ class Output(object):
         self.storage = storage
 
     def process(self, parent):
-        print parent.io_out_buffer
+        buf = self.storage.retrieve(index='sentence', type='input', id='1')
+        print buf
         return
 
+
+import uuid, base64
+from collections import defaultdict
 class MainBrainStorage(object):
+    data = defaultdict(lambda : defaultdict(dict))
+
     def __init__(self):
         return
 
-    def store(self, obj):
-        return obj_id
+    def store(self, obj, **kwargs):
+        val_index = kwargs.pop('index', None)
+        val_type  = kwargs.pop('type', None)
+        val_id    = kwargs.pop('id', uuid.uuid4())
 
-    def retrieve(self, obj_id):
-        return obj
+        if val_index is None: raise
+        if val_type  is None: raise
+        if val_id    is None: raise
 
+        # Store at coordinate, similar to ElasticSearch
+        self.data[val_index][val_type][val_id] = obj
+        return val_id
 
+    def retrieve(self, **kwargs):
+        val_index = kwargs.pop('index', None)
+        val_type  = kwargs.pop('type', None)
+        val_id    = kwargs.pop('id', None)
+
+        if val_index is None: raise
+        if val_type  is None: raise
+        if val_id    is None: raise
+
+        # Retrieve at coordinate, similar to ElasticSearch
+        return self.data[val_index][val_type][val_id]
 
 class MainBrain(object):
     modules = []
@@ -111,6 +159,6 @@ if __name__ == "__main__":
 
     mb.addModule(Output())
     mb.addModule(Process())
-    mb.addModule(Input())
+    mb.addModule(InputSentence())
 
     mb.start()
