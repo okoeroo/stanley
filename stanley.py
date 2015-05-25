@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-MODULE = '/Users/okoeroo/dvl/scripts/python/stanley/pattern-2.6'
+import os
+MODULE = os.path.dirname(os.path.abspath(__file__)) + '/pattern-2.6'
 import sys
 if MODULE not in sys.path: sys.path.append(MODULE)
 from pattern.en import parse, parsetree, pluralize, singularize
