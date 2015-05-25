@@ -3,7 +3,7 @@
 MODULE = '/Users/okoeroo/dvl/scripts/python/stanley/pattern-2.6'
 import sys
 if MODULE not in sys.path: sys.path.append(MODULE)
-from pattern.en import parse, parsetree, pluralize, singularize
+from pattern.en import parse, parsetree, pluralize, singularize, sentiment
 
 # statement
 # question
@@ -22,7 +22,13 @@ class InputSentence(object):
         self.storage = storage
 
     def process(self, parent):
-        buf = raw_input('||>>|| # ')
+        name = self.storage.retrieve(index='personality', type='name', id='1')
+        if name is not None:
+            sh = '||> ' + name + '>|| # '
+        else:
+            sh = '||> >|| # '
+
+        buf = raw_input(sh)
         self.storage.store(buf, index='sentence', type='input', id='1')
         return
 
@@ -38,12 +44,20 @@ class Process(object):
 
     def process(self, parent):
         buf = self.storage.retrieve(index='sentence', type='input', id='1')
-        if buf.lower().split()[0] in {"who", "where", "when", "why", "what", "which", "how"}:
+
+        # Quit
+        if buf.lower() in {'quit', 'stop', 'exit'}:
+            sys.exit(0)
+
+        # Is it a question?
+        elif buf.lower().split()[0] in {"who", "where", "when", "why", "what", "which", "how"}:
             self.storage.store('question', index='sentence', type='sentence_type', id='1')
 
         # command, begin (first word here) with a nounce
         elif buf.lower().split()[0] in {"give", "show", "do", "fix", "stop", "start", ""}:
             self.storage.store('command', index='sentence', type='sentence_type', id='1')
+
+        print sentiment(buf)
 
         s = buf
         s = parse(s,
@@ -55,9 +69,13 @@ class Process(object):
                 light = False)
 
 #        print s
+
         for sentence in s.split():
-            for w in sentence:
-                print w
+            for word_tags in sentence:
+                print word_tags
+                if 'NNP' in word_tags:
+                    print "My name is: " + word_tags[0]
+                    self.storage.store(word_tags[0], index='personality', type='name', id='1')
 
         return
 
@@ -115,7 +133,10 @@ class MainBrainStorage(object):
         if val_id    is None: raise
 
         # Retrieve at coordinate, similar to ElasticSearch
-        return self.data[val_index][val_type][val_id]
+        try:
+            return self.data[val_index][val_type][val_id]
+        except:
+            return None
 
 class MainBrain(object):
     modules = []
@@ -168,4 +189,5 @@ if __name__ == "__main__":
     mb.addModule(Process())
     mb.addModule(InputSentence())
 
-    mb.start()
+    while True:
+        mb.start()
